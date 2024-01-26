@@ -50,8 +50,14 @@ def main(args):
     save_every = args['save_every']
     resume_ckpt_path = args['resume_ckpt_path']
 
+
+    print('args: ', args)
+    print('---------------------------------------')
+
     # get task parameters
     is_sim = task_name[:4] == 'sim_'
+    # print teask name and config
+    print('task_name: ', task_name)
     if is_sim or task_name == 'all':
         from constants import SIM_TASK_CONFIGS
         task_config = SIM_TASK_CONFIGS[task_name]
@@ -145,12 +151,12 @@ def main(args):
     config_path = os.path.join(ckpt_dir, 'config.pkl')
     expr_name = ckpt_dir.split('/')[-1]
     if not is_eval:
-        wandb.init(project="mobile-aloha2", reinit=True, entity="mobile-aloha2", name=expr_name)
+        wandb.init(project="mobile-aloha2", reinit=True, entity="moma", name=expr_name)
         wandb.config.update(config)
     with open(config_path, 'wb') as f:
         pickle.dump(config, f)
     if is_eval:
-        ckpt_names = [f'policy_last.ckpt']
+        ckpt_names = [f'policy_best.ckpt']
         results = []
         for ckpt_name in ckpt_names:
             success_rate, avg_return = eval_bc(config, ckpt_name, save_episode=True, num_rollouts=10)
@@ -162,7 +168,9 @@ def main(args):
         print()
         exit()
 
-    train_dataloader, val_dataloader, stats, _ = load_data(dataset_dir, name_filter, camera_names, batch_size_train, batch_size_val, args['chunk_size'], args['skip_mirrored_data'], config['load_pretrain'], policy_class, stats_dir_l=stats_dir, sample_weights=sample_weights, train_ratio=train_ratio)
+    train_dataloader, val_dataloader, stats, _ = load_data(dataset_dir, name_filter, camera_names, batch_size_train, batch_size_val, 
+                                                           args['chunk_size'], args['skip_mirrored_data'], config['load_pretrain'], 
+                                                           policy_class, stats_dir_l=stats_dir, sample_weights=sample_weights, train_ratio=train_ratio)
 
     # save dataset stats
     stats_path = os.path.join(ckpt_dir, f'dataset_stats.pkl')
@@ -662,5 +670,6 @@ if __name__ == '__main__':
     parser.add_argument('--vq_class', action='store', type=int, help='vq_class')
     parser.add_argument('--vq_dim', action='store', type=int, help='vq_dim')
     parser.add_argument('--no_encoder', action='store_true')
+
     
     main(vars(parser.parse_args()))

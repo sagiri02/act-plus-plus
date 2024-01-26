@@ -10,6 +10,8 @@ from constants import DT
 import IPython
 e = IPython.embed
 
+import pdb
+
 JOINT_NAMES = ["waist", "shoulder", "elbow", "forearm_roll", "wrist_angle", "wrist_rotate"]
 STATE_NAMES = JOINT_NAMES + ["gripper"]
 
@@ -26,6 +28,7 @@ def load_hdf5(dataset_dir, dataset_name):
         action = root['/action'][()]
         image_dict = dict()
         for cam_name in root[f'/observations/images/'].keys():
+            print('======cam name', cam_name)
             image_dict[cam_name] = root[f'/observations/images/{cam_name}'][()]
 
     return qpos, qvel, action, image_dict
@@ -66,11 +69,15 @@ def save_videos(video, dt, video_path=None):
     elif isinstance(video, dict):
         cam_names = list(video.keys())
         cam_names = sorted(cam_names)
+        # pdb.set_trace()
         all_cam_videos = []
         for cam_name in cam_names:
             all_cam_videos.append(video[cam_name])
+        print(all_cam_videos[0].shape)
+
         all_cam_videos = np.concatenate(all_cam_videos, axis=2) # width dimension
 
+        # n_frames, h, w, _ = all_cam_videos.shape
         n_frames, h, w, _ = all_cam_videos.shape
         fps = int(1 / dt)
         out = cv2.VideoWriter(video_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))

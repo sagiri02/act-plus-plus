@@ -14,6 +14,8 @@ import torch
 import torch.nn.functional as F
 from torch import nn, Tensor
 
+import pdb
+
 import IPython
 e = IPython.embed
 
@@ -47,11 +49,11 @@ class Transformer(nn.Module):
                 nn.init.xavier_uniform_(p)
 
     def forward(self, src, mask, query_embed, pos_embed, latent_input=None, proprio_input=None, additional_pos_embed=None):
-        # TODO flatten only when input has H and W
+        # TODO flatten only when input has H and W, NCHW
         if len(src.shape) == 4: # has H and W
             # flatten NxCxHxW to HWxNxC
             bs, c, h, w = src.shape
-            src = src.flatten(2).permute(2, 0, 1)
+            src = src.flatten(2).permute(2, 0, 1) # hw, n, c
             pos_embed = pos_embed.flatten(2).permute(2, 0, 1).repeat(1, bs, 1)
             query_embed = query_embed.unsqueeze(1).repeat(1, bs, 1)
             # mask = mask.flatten(1)

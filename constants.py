@@ -2,7 +2,8 @@ import pathlib
 import os
 
 ### Task parameters
-DATA_DIR = '/home/zfu/interbotix_ws/src/act/data' if os.getlogin() == 'zfu' else '/scr/tonyzhao/datasets'
+# DATA_DIR = '/home/zfu/interbotix_ws/src/act/data' if os.getlogin() == 'zfu' else '/scr/tonyzhao/datasets'
+DATA_DIR = '/home/alvin/data/aloha/'
 SIM_TASK_CONFIGS = {
     'sim_transfer_cube_scripted':{
         'dataset_dir': DATA_DIR + '/sim_transfer_cube_scripted',
@@ -54,6 +55,7 @@ SIM_TASK_CONFIGS = {
     },
 
 }
+
 
 ### Simulation envs fixed constants
 DT = 0.02

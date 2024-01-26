@@ -217,7 +217,8 @@ def BatchSampler(batch_size, episode_len_l, sample_weights):
             batch.append(step_idx)
         yield batch
 
-def load_data(dataset_dir_l, name_filter, camera_names, batch_size_train, batch_size_val, chunk_size, skip_mirrored_data=False, load_pretrain=False, policy_class=None, stats_dir_l=None, sample_weights=None, train_ratio=0.99):
+def load_data(dataset_dir_l, name_filter, camera_names, batch_size_train, batch_size_val, chunk_size, skip_mirrored_data=False, 
+              load_pretrain=False, policy_class=None, stats_dir_l=None, sample_weights=None, train_ratio=0.99):
     if type(dataset_dir_l) == str:
         dataset_dir_l = [dataset_dir_l]
     dataset_path_list_list = [find_all_hdf5(dataset_dir, skip_mirrored_data) for dataset_dir in dataset_dir_l]
@@ -262,8 +263,10 @@ def load_data(dataset_dir_l, name_filter, camera_names, batch_size_train, batch_
     # construct dataset and dataloader
     train_dataset = EpisodicDataset(dataset_path_list, camera_names, norm_stats, train_episode_ids, train_episode_len, chunk_size, policy_class)
     val_dataset = EpisodicDataset(dataset_path_list, camera_names, norm_stats, val_episode_ids, val_episode_len, chunk_size, policy_class)
-    train_num_workers = (8 if os.getlogin() == 'zfu' else 16) if train_dataset.augment_images else 2
-    val_num_workers = 8 if train_dataset.augment_images else 2
+    # train_num_workers = (8 if os.getlogin() == 'zfu' else 16) if train_dataset.augment_images else 2
+    # val_num_workers = 8 if train_dataset.augment_images else 2
+    train_num_workers = 16
+    val_num_workers = 8
     print(f'Augment images: {train_dataset.augment_images}, train_num_workers: {train_num_workers}, val_num_workers: {val_num_workers}')
     train_dataloader = DataLoader(train_dataset, batch_sampler=batch_sampler_train, pin_memory=True, num_workers=train_num_workers, prefetch_factor=2)
     val_dataloader = DataLoader(val_dataset, batch_sampler=batch_sampler_val, pin_memory=True, num_workers=val_num_workers, prefetch_factor=2)

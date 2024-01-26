@@ -14,6 +14,8 @@ import numpy as np
 import IPython
 e = IPython.embed
 
+import pdb
+
 
 def reparametrize(mu, logvar):
     std = logvar.div(2).exp()
@@ -159,13 +161,13 @@ class DETRVAE(nn.Module):
             all_cam_pos = []
             for cam_id, cam_name in enumerate(self.camera_names):
                 features, pos = self.backbones[cam_id](image[:, cam_id])
-                features = features[0] # take the last layer feature
+                features = features[0] # take the last layer feature, NCHW
                 pos = pos[0]
                 all_cam_features.append(self.input_proj(features))
                 all_cam_pos.append(pos)
             # proprioception features
             proprio_input = self.input_proj_robot_state(qpos)
-            # fold camera dimension into width dimension
+            # fold camera dimension into width dimension, NCHW
             src = torch.cat(all_cam_features, axis=3)
             pos = torch.cat(all_cam_pos, axis=3)
             hs = self.transformer(src, None, self.query_embed.weight, pos, latent_input, proprio_input, self.additional_pos_embed.weight)[0]
@@ -282,7 +284,8 @@ def build(args):
     if args.no_encoder:
         encoder = None
     else:
-        encoder = build_transformer(args)
+        # encoder = build_transformer(args)
+        encoder = build_encoder(args)
 
     model = DETRVAE(
         backbones,
