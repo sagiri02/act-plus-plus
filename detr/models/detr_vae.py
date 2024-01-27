@@ -274,6 +274,10 @@ def build(args):
     # From state
     # backbone = None # from state for now, no need for conv nets
     # From image
+
+    #print args
+    print('======================')
+    print(args)
     backbones = []
     for _ in args.camera_names:
         backbone = build_backbone(args)
