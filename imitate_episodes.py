@@ -233,6 +233,10 @@ def get_image(ts, camera_names, rand_crop_resize=False):
     return curr_image
 
 
+
+#用于评估策略的性能，
+# 它会加载指定的检查点文件，
+# 并在环境中运行多个回合来计算成功率和其他性能指标。
 def eval_bc(config, ckpt_name, save_episode=True, num_rollouts=50):
     set_seed(1000)
     ckpt_dir = config['ckpt_dir']
@@ -567,12 +571,14 @@ def train_bc(train_dataloader, val_dataloader, config):
     
     train_dataloader = repeater(train_dataloader)
     for step in tqdm(range(num_steps+1)):
-        # validation
+        # validation（如果是validate_every的倍数）
         if step % validate_every == 0:
             print('validating')
 
             with torch.inference_mode():
                 policy.eval()
+
+                #只进行前向传播
                 validation_dicts = []
                 for batch_idx, data in enumerate(val_dataloader):
                     forward_dict = forward_pass(data, policy)
@@ -583,6 +589,8 @@ def train_bc(train_dataloader, val_dataloader, config):
                 validation_summary = compute_dict_mean(validation_dicts)
 
                 epoch_val_loss = validation_summary['loss']
+                #如果当前的验证损失epoch_val_loss小于之前的最小验证损失min_val_loss
+                # 则更新min_val_loss和最佳模型检查点信息best_ckpt_info。
                 if epoch_val_loss < min_val_loss:
                     min_val_loss = epoch_val_loss
                     best_ckpt_info = (step, min_val_loss, deepcopy(policy.serialize()))
@@ -596,6 +604,7 @@ def train_bc(train_dataloader, val_dataloader, config):
             print(summary_string)
                 
         # evaluation
+        #训练过程中的特定步骤执行模型的评估和保存
         if (step > 0) and (step % eval_every == 0):
             # first save then eval
             ckpt_name = f'policy_step_{step}_seed_{seed}.ckpt'

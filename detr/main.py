@@ -84,6 +84,9 @@ def get_args_parser():
 
 
 def build_ACT_model_and_optimizer(args_override):
+
+    #创建了一个参数解析器parser，并通过get_args_parser()函数获取预定义的参数列表。
+    # 然后，它解析命令行参数并将结果存储在args对象中
     parser = argparse.ArgumentParser('DETR training and evaluation script', parents=[get_args_parser()])
     args = parser.parse_args()
 

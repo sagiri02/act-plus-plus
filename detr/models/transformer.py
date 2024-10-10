@@ -144,12 +144,25 @@ class TransformerDecoder(nn.Module):
 
 
 class TransformerEncoderLayer(nn.Module):
+    """
+    Transformer编码器层，包含自注意力机制和前馈神经网络。
+    """
 
     def __init__(self, d_model, nhead, dim_feedforward=2048, dropout=0.1,
                  activation="relu", normalize_before=False):
+        """
+        初始化TransformerEncoderLayer。
+
+        :param d_model: 模型的维度
+        :param nhead: 多头注意力的头数
+        :param dim_feedforward: 前馈网络的维度，默认为2048
+        :param dropout: 丢弃率，默认为0.1
+        :param activation: 激活函数，默认为"relu"
+        :param normalize_before: 是否在自注意力和前馈网络之前进行归一化
+        """
         super().__init__()
         self.self_attn = nn.MultiheadAttention(d_model, nhead, dropout=dropout)
-        # Implementation of Feedforward model
+        # 实现前馈模型
         self.linear1 = nn.Linear(d_model, dim_feedforward)
         self.dropout = nn.Dropout(dropout)
         self.linear2 = nn.Linear(dim_feedforward, d_model)
@@ -163,6 +176,13 @@ class TransformerEncoderLayer(nn.Module):
         self.normalize_before = normalize_before
 
     def with_pos_embed(self, tensor, pos: Optional[Tensor]):
+        """
+        将位置嵌入添加到张量中。
+
+        :param tensor: 输入张量
+        :param pos: 位置嵌入张量，如果为None则不添加
+        :return: 添加位置嵌入后的张量
+        """
         return tensor if pos is None else tensor + pos
 
     def forward_post(self,
@@ -170,6 +190,15 @@ class TransformerEncoderLayer(nn.Module):
                      src_mask: Optional[Tensor] = None,
                      src_key_padding_mask: Optional[Tensor] = None,
                      pos: Optional[Tensor] = None):
+        """
+        在自注意力和前馈网络之后进行归一化的前向传播。
+
+        :param src: 输入张量
+        :param src_mask: 源掩码，用于自注意力机制
+        :param src_key_padding_mask: 源密钥填充掩码，用于自注意力机制
+        :param pos: 位置嵌入张量
+        :return: 处理后的张量
+        """
         q = k = self.with_pos_embed(src, pos)
         src2 = self.self_attn(q, k, value=src, attn_mask=src_mask,
                               key_padding_mask=src_key_padding_mask)[0]
@@ -184,6 +213,15 @@ class TransformerEncoderLayer(nn.Module):
                     src_mask: Optional[Tensor] = None,
                     src_key_padding_mask: Optional[Tensor] = None,
                     pos: Optional[Tensor] = None):
+        """
+        在自注意力和前馈网络之前进行归一化的前向传播。
+
+        :param src: 输入张量
+        :param src_mask: 源掩码，用于自注意力机制
+        :param src_key_padding_mask: 源密钥填充掩码，用于自注意力机制
+        :param pos: 位置嵌入张量
+        :return: 处理后的张量
+        """
         src2 = self.norm1(src)
         q = k = self.with_pos_embed(src2, pos)
         src2 = self.self_attn(q, k, value=src2, attn_mask=src_mask,
@@ -198,9 +236,19 @@ class TransformerEncoderLayer(nn.Module):
                 src_mask: Optional[Tensor] = None,
                 src_key_padding_mask: Optional[Tensor] = None,
                 pos: Optional[Tensor] = None):
+        """
+        根据normalize_before参数选择前向传播的方式。
+
+        :param src: 输入张量
+        :param src_mask: 源掩码，用于自注意力机制
+        :param src_key_padding_mask: 源密钥填充掩码，用于自注意力机制
+        :param pos: 位置嵌入张量
+        :return: 处理后的张量
+        """
         if self.normalize_before:
             return self.forward_pre(src, src_mask, src_key_padding_mask, pos)
         return self.forward_post(src, src_mask, src_key_padding_mask, pos)
+
 
 
 class TransformerDecoderLayer(nn.Module):

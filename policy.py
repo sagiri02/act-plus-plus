@@ -217,6 +217,7 @@ class ACTPolicy(nn.Module):
 
             loss_dict = dict()
             a_hat, is_pad_hat, (mu, logvar), probs, binaries = self.model(qpos, image, env_state, actions, is_pad, vq_sample)
+            #计算kl散度
             if self.vq or self.model.encoder is None:
                 total_kld = [torch.tensor(0.0)]
             else:

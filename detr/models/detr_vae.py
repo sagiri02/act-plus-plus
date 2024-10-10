@@ -90,7 +90,18 @@ class DETRVAE(nn.Module):
 
 
     def encode(self, qpos, actions=None, is_pad=None, vq_sample=None):
+
+        # qpos：关节姿态
+        # bs：batch_size
         bs, _ = qpos.shape
+
+        ''''
+        检查是否存在编码器
+        如果不存在，它会创建一个全零的潜在样本（latent_sample），
+        并通过一个线性投影层（latent_out_proj）将其转换为潜在输入（latent_input）。
+        在这种情况下，由于没有编码器
+        ，所以不会计算概率（probs）、二进制编码（binaries）、均值（mu）和对数方差（logvar），这些值都被设置为None
+        '''
         if self.encoder is None:
             latent_sample = torch.zeros([bs, self.latent_dim], dtype=torch.float32).to(qpos.device)
             latent_input = self.latent_out_proj(latent_sample)
@@ -103,12 +114,20 @@ class DETRVAE(nn.Module):
                 # project action sequence to embedding dim, and concat with a CLS token
                 action_embed = self.encoder_action_proj(actions) # (bs, seq, hidden_dim)
                 qpos_embed = self.encoder_joint_proj(qpos)  # (bs, hidden_dim)
+
+                #增加一个新的维度，axis=1 表示在第二个维度（从0开始计数）上增加一个维度。
                 qpos_embed = torch.unsqueeze(qpos_embed, axis=1)  # (bs, 1, hidden_dim)
                 cls_embed = self.cls_embed.weight # (1, hidden_dim)
+
+                #.repeat()方法中，第一个参数对应的是第0轴的重复次数，第二个和第三个参数分别对应第1轴和第2轴的重复次数。
+                # 由于第1轴和第2轴的重复次数都是1，所以这两个维度上的大小不会改变。
                 cls_embed = torch.unsqueeze(cls_embed, axis=0).repeat(bs, 1, 1) # (bs, 1, hidden_dim)
+                
+                #拼接cls_embed，qpos_embed，action_embed得到encoder_input
                 encoder_input = torch.cat([cls_embed, qpos_embed, action_embed], axis=1) # (bs, seq+1, hidden_dim)
                 encoder_input = encoder_input.permute(1, 0, 2) # (seq+1, bs, hidden_dim)
                 # do not mask cls token
+                '''CLS 标记和关节姿态标记都是非填充的，因此在它们的掩码位置上为 False'''
                 cls_joint_is_pad = torch.full((bs, 2), False).to(qpos.device) # False: not a padding
                 is_pad = torch.cat([cls_joint_is_pad, is_pad], axis=1)  # (bs, seq+1)
                 # obtain position embedding
@@ -117,6 +136,8 @@ class DETRVAE(nn.Module):
                 # query model
                 encoder_output = self.encoder(encoder_input, pos=pos_embed, src_key_padding_mask=is_pad)
                 encoder_output = encoder_output[0] # take cls output only
+
+                #将encoder_output转换为均值和方差
                 latent_info = self.latent_proj(encoder_output)
                 
                 if self.vq:
@@ -130,6 +151,7 @@ class DETRVAE(nn.Module):
                     mu = logvar = None
                 else:
                     probs = binaries = None
+                    #前半是mu，后半是logvar
                     mu = latent_info[:, :self.latent_dim]
                     logvar = latent_info[:, self.latent_dim:]
                     latent_sample = reparametrize(mu, logvar)
@@ -176,6 +198,7 @@ class DETRVAE(nn.Module):
             env_state = self.input_proj_env_state(env_state)
             transformer_input = torch.cat([qpos, env_state], axis=1) # seq length = 2
             hs = self.transformer(transformer_input, None, self.query_embed.weight, self.pos.weight)[0]
+       #输出预测的动作和是否是pad
         a_hat = self.action_head(hs)
         is_pad_hat = self.is_pad_head(hs)
         return a_hat, is_pad_hat, [mu, logvar], probs, binaries

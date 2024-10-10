@@ -85,10 +85,19 @@ class BackboneBase(nn.Module):
 
 class Backbone(BackboneBase):
     """ResNet backbone with frozen BatchNorm."""
+
+    #这是类的构造函数，它接受四个参数：
+    # name（ResNet模型的名称），
+    # train_backbone（是否训练骨干网络），
+    # return_interm_layers（是否返回中间层），
+    # 以及dilation（是否使用扩张卷积）。
     def __init__(self, name: str,
                  train_backbone: bool,
                  return_interm_layers: bool,
                  dilation: bool):
+        
+        #这一行代码使用getattr函数从torchvision.models模块中获取指定名称的ResNet模型
+        # 并传入一些参数来初始化这个模型。
         backbone = getattr(torchvision.models, name)(
             replace_stride_with_dilation=[False, False, dilation],
             pretrained=is_main_process(), norm_layer=FrozenBatchNorm2d) # pretrained # TODO do we want frozen batch_norm??
@@ -97,11 +106,24 @@ class Backbone(BackboneBase):
 
 
 class Joiner(nn.Sequential):
+
+    #Joiner 类的目的是将一个骨干网络（backbone）和一个位置嵌入（position_embedding）结合起来。
     def __init__(self, backbone, position_embedding):
         super().__init__(backbone, position_embedding)
 
     def forward(self, tensor_list: NestedTensor):
         xs = self[0](tensor_list)
+
+        '''
+        调用xs = self[0](tensor_list)会得到一个字典：
+        {
+        "0": feature_map_from_layer1,  # 对应ResNet的 layer1 的输出
+        "1": feature_map_from_layer2,  # 对应ResNet的 layer2 的输出
+        "2": feature_map_from_layer3,  # 对应ResNet的 layer3 的输出
+        "3": feature_map_from_layer4   # 对应ResNet的 layer4 的输出
+        }
+
+        '''
         out: List[NestedTensor] = []
         pos = []
         for name, x in xs.items():
